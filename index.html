@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Experiment</title>
+    <link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="setup-screen active">
+            <h1>Feedback Experiment</h1>
+            
+            <!-- <div class="instructions">
+                <h3>Experiment Setup</h3>
+                <p>This experiment will randomly assign participants to one of two feedback conditions:</p>
+                <ul style="margin-top: 10px; margin-left: 20px; color: #555;">
+                    <li><strong>Type A:</strong> Positive feedback (pleasant sound) for correct button presses</li>
+                    <li><strong>Type B:</strong> Negative feedback (unpleasant sound) for incorrect button presses</li>
+                </ul>
+            </div> -->
+
+            <div class="input-group">
+                <label for="participantName">Participant Name:</label>
+                <input type="text" id="participantName" placeholder="Enter your name here">
+            </div>
+
+            <!-- <div class="input-group">
+                <label for="totalParticipants">Total Number of Participants:</label>
+                <input type="number" id="totalParticipants" min="2" placeholder="Enter total participants (must be even)">
+            </div> -->
+
+            <button type="button" onclick="startExperiment()">Begin Experiment</button>
+        </div>
+
+        <div class="experiment-screen">
+            <div class="game-info">Game <span id="gameNumber">1</span> of 3</div>
+            <div class="timer" id="timer">10:00</div>
+            
+            <div class="pattern-display" id="patternDisplay"></div>
+            
+            <div class="button-grid" id="buttonGrid"></div>
+            
+            <!-- <button onclick="endGame()" style="margin-top: 20px; background-color: #ff9800;">Skip to Next Game (Testing)</button> -->
+        </div>
+
+        <div class="complete-screen">
+            <h1>Experiment Complete</h1>
+            <p style="text-align: center;"><i>Please take a screenshot of results and send to <a href="mailto:mie286project@gmail.com">mie286project@gmail.com</a>!</i></p>
+            <div class="results" id="results"></div>
+            <!-- <button onclick="resetExperiment()">Start New Session</button> -->
+        </div>
+    </div>
+
+    <script src="./src/main.js" type="module"></script>
+</body>
+</html>
