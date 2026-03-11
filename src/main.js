@@ -8,24 +8,25 @@ const games = [
     {
         name: "High-Low Alternating Pattern",
         patternLength: 10,
-        checkSequence: (sequence) => {
-            const target = [9, 0, 8, 1, 7, 2, 6, 3, 5, 4];
+        target: [9, 0, 8, 1, 7, 2, 6, 3, 5, 4],
 
+        checkSequence(sequence) {
             for (let i = 0; i < sequence.length; i++) {
-                if (sequence[i] !== target[i]) 
+                if (sequence[i] !== this.target[i]) 
                     return false;
             }
-
             return true;
         },
-        checkComplete: (sequence) => {
-            const target = [9, 0, 8, 1, 7, 2, 6, 3, 5, 4];
+        checkPress(number, sequence) {
+            return number === this.target[sequence.length];
+        },
+        checkComplete(sequence) {
 
-            if (sequence.length !== target.length) 
+            if (sequence.length !== this.target.length) 
                 return false;
 
-            for (let i = 0; i < target.length; i++) {
-                if (sequence[i] !== target[i]) 
+            for (let i = 0; i < this.target.length; i++) {
+                if (sequence[i] !== this.target[i]) 
                     return false;
             }
 
@@ -173,8 +174,7 @@ function updatePatternDisplay() {
 function handleButtonClick(number, buttonElement) {
     totalClicks++;
     
-    const testSequence = [...currentSequence, number];
-    const isCorrect = games[currentGame].checkSequence(testSequence);
+    const isCorrect = games[currentGame].checkPress(number, currentSequence);
     currentSequence.push(number);
     
     // visual and audio feedback based on condition type
