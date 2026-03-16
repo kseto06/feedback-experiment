@@ -286,6 +286,9 @@ function showResults() {
     
     const resultsDiv = document.getElementById('results');
     resultsDiv.innerHTML = `
+        <h2 style="text-align: center;">Results</h2>
+        <br>
+
         <div class="result-item">
             <h3>Participant Information</h3>
             <p><strong>Participant Name:</strong> ${participantName}</p>
@@ -310,4 +313,23 @@ function showResults() {
             </div>
         `;
     });
+
+    resultsDiv.innerHTML += `
+        <div class="survey-section" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h2 style="text-align: center;">Post-Experiment Study Survey</h2>
+            <br>
+            <p style="text-align: center; max-width=100%">Please complete the Google Form below. We will use your response for a study that we are conducting.</p>
+            <br>
+            <iframe
+                src="https://forms.gle/tATyGLhL6Z94ugho6"
+                width="100%"
+                height="700"
+                frameborder="0"
+                marginheight="0"
+                marginwidth="0"
+                style="display: block; margin: 0 auto;">
+                Loading...
+            </iframe>
+        </div>
+    `;
 }
