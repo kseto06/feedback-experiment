@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+analysis/serviceAccountKey.json
+analysis/data
+Rplots.pdf
