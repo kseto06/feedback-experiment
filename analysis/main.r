@@ -3,11 +3,11 @@ library(checkmate)
 
 # load trial csv data into dataframe from firebase output
 system2("npx", args = c("tsx", "analysis/export.ts"))
-df <- read_csv("analysis/data/trials.csv")
+full_df <- read_csv("analysis/data/trials.csv")
 
 # split into positive and negative dfs:
-positive_df <- df |> filter(feedbackType == "POSITIVE")
-negative_df <- df |> filter(feedbackType == "NEGATIVE")
+positive_df <- full_df |> filter(feedbackType == "POSITIVE")
+negative_df <- full_df |> filter(feedbackType == "NEGATIVE")
 
 #' Plot two columns (for relationship):
 #' 
@@ -16,7 +16,7 @@ negative_df <- df |> filter(feedbackType == "NEGATIVE")
 #' @param feedbackType: Character - "POSITIVE"/"NEGATIVE"
 #' @param graph_type: Character - specification of the type of graph to be used
 #' @param show_stats: Boolean - to print independent variable stats or not
-#'  e.g: "point", "line", "bar", "boxplot"
+#'  e.g: "point", "line", "bar", "box"
 #' @return: ggplot object
 plot_graph <- function(x, y, feedbackType, graph_type, show_stats) {
     assert_string(x)
@@ -25,29 +25,42 @@ plot_graph <- function(x, y, feedbackType, graph_type, show_stats) {
     assert_string(graph_type)
     assertLogical(show_stats)
 
-    df <- if (feedbackType == "POSITIVE") positive_df else negative_df
+    if (feedbackType == "ALL") {
+        df <- full_df 
+    } else {
+        df <- if (feedbackType == "POSITIVE") positive_df else negative_df
+    }
 
     p <- ggplot(df, aes(x = .data[[x]], y = .data[[y]])) +
     geom_point(aes(color = "data"))
 
+    unit = ""
+    round_precision = 0
+    if (y == "thinkingTime") {
+        unit = "s"
+        round_precision = 1
+    } else if (y == "numberCorrect") {
+        unit = " clicks"
+        round_precision = 0
+    }
 
     if (show_stats) {
         p <- p + scale_color_manual(
             values = c("data" = "steelblue"),
             labels = c(
                 paste0(
-                    "Mean = ",   compute_mean(df, x),
-                    "\nStdev = ", compute_stdev(df, x),
-                    "\nMedian = ", compute_median(df, x),
-                    "\nRange = ", compute_range(df, x)
+                    "Mean = ", round(compute_mean(df, y), round_precision), unit, 
+                    "\nStdev = ", round(compute_stdev(df, y), round_precision), unit, 
+                    "\nMedian = ", round(compute_median(df, y), round_precision), unit,
+                    "\nRange = ", round(compute_range(df, y), round_precision), unit
                 )
             )
         )
     }
 
     p <- p + labs(
-        x = x,
-        y = y,
+        x = paste(x, sprintf("(%s)", trimws(unit))),
+        y = paste(y, sprintf("(%s)", trimws(unit))),
         title = paste(y, "vs.", x, "for", feedbackType, "feedback type"),
         color = "Stats"
     )
@@ -55,14 +68,76 @@ plot_graph <- function(x, y, feedbackType, graph_type, show_stats) {
     if (graph_type == "line") {
         p <- p + geom_line()
     } else if (graph_type == "bar") {
-        p <- p + geom_bar(stat = "identity")
-    } else if (graph_type == "boxplot") {
+        # bar chart visualization for mean values with error bars
+        summary_df <- 
+            full_df %>%
+            group_by(.data[[x]]) %>%
+            summarise(
+                mean = compute_mean(full_df, y),
+                std = compute_stdev(full_df, y),
+                label = paste0(
+                    round(mean, round_precision), " \u00B1 ", round(std, round_precision), unit
+                )
+            )
+
+        p <- ggplot(summary_df, aes(x = .data[[x]], y = mean)) +
+            geom_col(width = 0.6) +
+            geom_errorbar(
+                aes(ymin = mean - std, ymax = mean + std),
+                width = 0.2
+            ) +
+            geom_text(
+                aes(y = mean + std + 0.05 * max(mean + std), label = label), #setting unc = std
+                size = 4
+            ) +
+            labs(
+                title = paste("Mean", y, "by", x),
+                x = x,
+                y = paste("Mean", y, sprintf("(%s)", trimws(unit)))
+            ) +
+            theme_minimal()
+
+    } else if (graph_type == "box") {
+        # code to produce label annotations for whiskers, quartiles, median, and IQR
+        values <- df[[y]]
+        values <- values[!is.na(values)]
+
+        q1 <- unname(quantile(values, 0.25))
+        med <- median(values)
+        q3 <- unname(quantile(values, 0.75))
+        iqr_val <- IQR(values)
+
+        lower_whisker <- min(values[values >= q1 - 1.5 * iqr_val])
+        upper_whisker <- max(values[values <= q3 + 1.5 * iqr_val])
+
+        label_df <- data.frame(
+            x = 1,
+            y = c(lower_whisker, q1, med, q3, upper_whisker),
+            label = c(
+                paste0("Lower whisker = ", round(lower_whisker, 2)),
+                paste0("Q1 = ", round(q1, 2)),
+                paste0("Median = ", round(med, 2)),
+                paste0("Q3 = ", round(q3, 2)),
+                paste0("Upper whisker = ", round(upper_whisker, 2))
+            )
+        )
+
+        p <- p +
+            geom_text(
+                data = label_df,
+                aes(x = x + 0.40, y = y, label = label),
+                inherit.aes = FALSE,
+                hjust = 0,
+                size = 3
+            ) +
+            coord_cartesian(clip = "off") +
+            theme(plot.margin = margin(5.5, 120, 5.5, 5.5))
+
         p <- p + geom_boxplot()
     } else {
         p <- p + geom_point()
     }
 
-    print(p)
     ggsave(sprintf("./analysis/figures/%s_vs_%s__%s.png", y, x, feedbackType), plot = p, width = 8, height = 6)
     return(p)
 }
@@ -111,5 +186,16 @@ compute_range <- function(df, x) {
     )
 }
 
-plot_graph("thinkingTime", "numberIncorrect", "POSITIVE", "line", TRUE)
-plot_graph("thinkingTime", "numberIncorrect", "NEGATIVE", "line", FALSE)
+# Time accuracy tradeoff
+plot_graph("thinkingTime", "numberCorrect", "POSITIVE", "line", FALSE)
+plot_graph("thinkingTime", "numberCorrect", "NEGATIVE", "line", FALSE)
+
+# Box-and-whisker, response time & accuracy
+plot_graph("feedbackType", "thinkingTime", "POSITIVE", "box", TRUE)
+plot_graph("feedbackType", "thinkingTime", "NEGATIVE", "box", TRUE)
+plot_graph("feedbackType", "numberCorrect", "POSITIVE", "box", TRUE)
+plot_graph("feedbackType", "numberCorrect", "NEGATIVE", "box", TRUE)
+
+# Bar chart for mean performance and variability
+plot_graph("feedbackType", "thinkingTime", "ALL", "bar", TRUE)
+plot_graph("feedbackType", "numberCorrect", "ALL", "bar", TRUE)
