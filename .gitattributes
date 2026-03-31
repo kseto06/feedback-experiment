@@ -2,3 +2,4 @@
 *.js linguist-language=JavaScript
 *.r linguist-language=R
 *.R linguist-language=R
+index.html linguist-generated
