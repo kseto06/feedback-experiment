@@ -1,3 +1,4 @@
-*.ts linguist-detectable=true
-*.js linguist-detectable=true
-*.html linguist-detectable=true
+*.ts linguist-language=TypeScript
+*.js linguist-language=JavaScript
+*.r linguist-language=R
+*.R linguist-language=R
