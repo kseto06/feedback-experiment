@@ -4,7 +4,7 @@ This `./analysis` folder serves as the directory where the Firebase database exp
 
 ## Installation and Setup
 
-Running the R code:
+### R Setup
 1. Install R from the [CRAN Website](https://mirror.csclub.uwaterloo.ca/CRAN/). This link specifically navigates to the Waterloo domain. 
 2. Install all necessary R packages required using:
 ```sh
@@ -15,4 +15,17 @@ Rscript -e 'install.packages(c("tidyverse","checkmate"), repos="https://cloud.r-
 Rscript analysis/main.r
 ```
 
-When running the script, `main.r` will automatically run the terminal command for exporting the Firebase data to ensure the most up-to-date version when running data analysis. 
+### Node.js and Firebase Export Setup
+
+1. Install Node.js from the [Node.js Website](https://nodejs.org/).
+
+2. Install project dependencies using:
+```sh
+npm install
+```
+3. Export Firebase data to CSV using:
+```sh
+npx tsx analysis/export.ts
+```
+
+NOTE: When running the script, `main.r` will automatically run the `npx tsx` terminal command for exporting the Firebase data to ensure the most up-to-date version when running data analysis.
