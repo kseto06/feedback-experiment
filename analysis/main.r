@@ -16,14 +16,16 @@ negative_df <- full_df |> filter(feedbackType == "NEGATIVE")
 #' @param feedbackType: Character - "POSITIVE"/"NEGATIVE"
 #' @param graph_type: Character - specification of the type of graph to be used
 #' @param show_stats: Boolean - to print independent variable stats or not
+#' @param show_fit: Boolean - to print the values of the best fit or not
 #'  e.g: "point", "line", "bar", "box"
 #' @return: ggplot object
-plot_graph <- function(x, y, feedbackType, graph_type, show_stats) {
+plot_graph <- function(x, y, feedbackType, graph_type, show_stats, show_fit) {
     assert_string(x)
     assert_string(y)
     assert_string(feedbackType)
     assert_string(graph_type)
     assertLogical(show_stats)
+    assertLogical(show_fit)
 
     # Append a percent accuracy column with calculations to the df
     full_df <- full_df %>%
@@ -64,17 +66,13 @@ plot_graph <- function(x, y, feedbackType, graph_type, show_stats) {
         round_precision_y = 0
     } 
 
+    global_label = ""
     if (show_stats) {
-        p <- p + scale_color_manual(
-            values = c("data" = "steelblue"),
-            labels = c(
-                paste0(
-                    "Mean = ", round(compute_mean(df, y), round_precision_y), unit_y, 
-                    "\nStdev = ", round(compute_stdev(df, y), round_precision_y), unit_y, 
-                    "\nMedian = ", round(compute_median(df, y), round_precision_y), unit_y,
-                    "\nRange = ", round(compute_range(df, y), round_precision_y), unit_y
-                )
-            )
+        global_label <- paste0(
+            "Mean = ", round(compute_mean(df, y), round_precision_y), unit_y, 
+            "\nStdev = ", round(compute_stdev(df, y), round_precision_y), unit_y, 
+            "\nMedian = ", round(compute_median(df, y), round_precision_y), unit_y,
+            "\nRange = ", round(compute_range(df, y), round_precision_y), unit_y
         )
     }
 
@@ -84,13 +82,44 @@ plot_graph <- function(x, y, feedbackType, graph_type, show_stats) {
         title = paste(y, "vs.", x, "for", feedbackType, "feedback type"),
         color = "Stats"
     )
+
     if (graph_type == "linear") {
         # fit the data points to a linear fit
+        fit <- lm(df[[y]] ~ df[[x]])
+        r2 <- summary(fit)$r.squared
+        a <- coef(fit)[2]
+        b <- coef(fit)[1]
+        cov <- sqrt(diag(vcov(fit)))
+
+        fit_label <- paste0(
+            "y = (", round(a, 2), " \u00B1 ", round(cov[2], 2), ")x",
+            " + (", round(b, 2), " \u00B1 ", round(cov[1], 2), ")",
+            "\nR\u00B2 = ", round(r2, 2)
+        )
+
+        global_label <- paste0(global_label, "\n", fit_label)
+
         p <- p + geom_smooth(method = "lm", formula = y ~ x, se = TRUE)
 
     } else if (graph_type == "quadratic") {
         # fit the data points to a quadratic fit
-        p <- p + geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = TRUE)
+        fit <- lm(df[[y]] ~ poly(df[[x]], 2, raw = TRUE))
+        r2 <- summary(fit)$r.squared
+        a <- coef(fit)[3]
+        b <- coef(fit)[2]
+        c <- coef(fit)[1]
+        cov <- sqrt(diag(vcov(fit)))
+
+        fit_label <- paste0(
+            "y = (", round(a, 2), " \u00B1 ", round(cov[3], 2), ")x\u00B2",
+            " + (", round(b, 2), " \u00B1 ", round(cov[2], 2), ")x",
+            " + (", round(cc, 2), " \u00B1 ", round(cov[1], 2), ")",
+            "\nR\u00B2 = ", round(r2, 2)
+        )
+        
+        global_label <- paste0(global_label, "\n", fit_label)
+
+        p <- p + geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = TRUE)   
 
     } else if (graph_type == "bar") {
         # bar chart visualization for mean values with error bars
@@ -128,10 +157,10 @@ plot_graph <- function(x, y, feedbackType, graph_type, show_stats) {
             filter(!is.na(.data[[y]])) %>%
             group_by(feedbackType) %>%
             summarise(
-                q1            = quantile(.data[[y]], 0.25),
-                med           = median(.data[[y]]),
-                q3            = quantile(.data[[y]], 0.75),
-                iqr_val       = IQR(.data[[y]]),
+                q1 = quantile(.data[[y]], 0.25),
+                med = median(.data[[y]]),
+                q3 = quantile(.data[[y]], 0.75),
+                iqr_val = IQR(.data[[y]]),
                 lower_whisker = min(.data[[y]][.data[[y]] >= q1 - 1.5 * iqr_val]),
                 upper_whisker = max(.data[[y]][.data[[y]] <= q3 + 1.5 * iqr_val]),
                 .groups = "drop"
@@ -193,6 +222,20 @@ plot_graph <- function(x, y, feedbackType, graph_type, show_stats) {
         p <- p + geom_point()
     }
 
+    if (show_fit && graph_type %in% c("linear", "quadratic", "scatter")) {
+        p <- p + scale_color_manual(
+            values = c("data" = "salmon"),
+            labels = c("data" = "data") 
+        ) +
+        annotate(
+            "text",
+            x = -Inf, y = Inf,
+            label = global_label,
+            hjust = -0.1, vjust = 1.1,
+            size = 3.5
+        )
+    }
+
     ggsave(sprintf("./analysis/figures/%s_vs_%s__%s.png", y, x, feedbackType), plot = p, width = 8, height = 6)
     return(p)
 }
@@ -242,13 +285,13 @@ compute_range <- function(df, x) {
 }
 
 # Time accuracy tradeoff
-plot_graph("thinkingTime", "percentAccuracy", "POSITIVE", "linear", FALSE)
-plot_graph("thinkingTime", "percentAccuracy", "NEGATIVE", "quadratic", FALSE)
+plot_graph("thinkingTime", "percentAccuracy", "POSITIVE", "linear", FALSE, TRUE)
+plot_graph("thinkingTime", "percentAccuracy", "NEGATIVE", "linear", FALSE, TRUE)
 
 # Box-and-whisker, response time & accuracy
-plot_graph("feedbackType", "thinkingTime", "ALL", "box", TRUE)
-plot_graph("feedbackType", "percentAccuracy", "ALL", "box", TRUE)
+plot_graph("feedbackType", "thinkingTime", "ALL", "box", TRUE, FALSE)
+plot_graph("feedbackType", "percentAccuracy", "ALL", "box", TRUE, FALSE)
 
 # Bar chart for mean performance and variability
-plot_graph("feedbackType", "thinkingTime", "ALL", "bar", TRUE)
-plot_graph("feedbackType", "percentAccuracy", "ALL", "bar", TRUE)
+plot_graph("feedbackType", "thinkingTime", "ALL", "bar", TRUE, FALSE)
+plot_graph("feedbackType", "percentAccuracy", "ALL", "bar", TRUE, FALSE)
