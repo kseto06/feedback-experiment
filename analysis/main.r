@@ -26,6 +26,7 @@ plot_graph <- function(x, y, feedbackType, graph_type, show_stats, show_fit) {
     assert_string(graph_type)
     assertLogical(show_stats)
     assertLogical(show_fit)
+    p_resid <- NULL
 
     # Append a percent accuracy column with calculations to the df
     full_df <- full_df %>%
@@ -100,6 +101,22 @@ plot_graph <- function(x, y, feedbackType, graph_type, show_stats, show_fit) {
         global_label <- paste0(global_label, "\n", fit_label)
 
         p <- p + geom_smooth(method = "lm", formula = y ~ x, se = TRUE)
+
+        # Residuals plot
+        resid_df <- data.frame(
+            fitted = fitted(fit),
+            residuals = residuals(fit)
+        )
+
+        p_resid <- ggplot(resid_df, aes(x = fitted, y = residuals)) +
+            geom_point() +
+            geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+            labs(
+                x = paste(x, sprintf("(%s)", unit_x)),
+                y = paste(y, "Residuals", sprintf("(%s)", unit_y)),
+                title = paste("Residuals Plot", y, "vs", x, "for", feedbackType, "feedback")
+            ) +
+            theme_minimal()
 
     } else if (graph_type == "quadratic") {
         # fit the data points to a quadratic fit
@@ -237,7 +254,12 @@ plot_graph <- function(x, y, feedbackType, graph_type, show_stats, show_fit) {
     }
 
     ggsave(sprintf("./analysis/figures/%s_vs_%s__%s.png", y, x, feedbackType), plot = p, width = 8, height = 6)
-    return(p)
+    
+    if (!is.null(p_resid)) {
+        return(list(plot = p, residual_plot = p_resid))
+    } else {
+        return(p)
+    }
 }
 
 #' Compute the mean of a column:
