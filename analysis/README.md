@@ -1,12 +1,20 @@
 # Data Analysis
 
-This `./analysis` folder serves as the directory where the Firebase database exporter (to CSV) and R code data analysis is stored. 
+This `./analysis` folder serves as the directory where the R code data analysis and Firebase exporter (to CSV)  is stored. 
 
 ## Code Descriptions
 
 ### `main.r`
 
 The `main.r` script runs data analysis and visualization for generating box-and-whisker plots, bar charts (for means of variables), and a linear regression model to analyze the various effects of response time and accuracy versus feedback types and the time-accuracy tradeoff, respectively. 
+
+### `QQ.r`
+
+The `QQ.r` script runs data analysis and visualization for generating QQ plots, analyzing normality of response time and accuracy distributions across both feedback types.
+
+### `T_test.r`
+
+The `T_test.r` runs Welch's two-sample t-tests to compare response time and accuracy across both feedback types and outputs means, degrees of freedom, t-statistics, p-values, and confidence intervals for each group. 
 
 ### `covariates.r`
 
