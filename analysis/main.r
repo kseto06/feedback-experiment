@@ -219,7 +219,7 @@ plot_graph <- function(x, y, feedbackType, graph_type, show_stats, show_fit) {
                 aes(x = x + x_offset, y = y, label = label),
                 inherit.aes = FALSE,
                 hjust = 0,
-                size = 3
+                size = 4.5
             ) +
             scale_x_continuous(
                 breaks = x_positions,
