@@ -25,4 +25,4 @@ dist-ssr
 
 analysis/serviceAccountKey.json
 analysis/data
-Rplots.pdf
+*.png
